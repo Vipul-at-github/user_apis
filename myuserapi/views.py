@@ -6,8 +6,20 @@ from rest_framework.authtoken.models import Token
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.authentication import TokenAuthentication
+from rest_framework import status
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
+
+# Url to create new user
 
 
+@swagger_auto_schema(method='post', request_body=openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    properties={
+        'username': openapi.Schema(type=openapi.TYPE_STRING),
+        'password': openapi.Schema(type=openapi.TYPE_STRING, format='password'),
+    }
+))
 @api_view(['POST'])
 @permission_classes([AllowAny])
 def register(request):
@@ -25,6 +37,8 @@ def register(request):
         data['token'] = token.key
         return Response(data)
 
+# Url only accessible by authenticated users
+
 
 @csrf_exempt
 @api_view(['GET'])
@@ -40,16 +54,19 @@ def protect(request):
     }
     return Response(data)
 
+# Url to logout user
+
 
 @api_view(['GET'])
 @csrf_exempt
 @authentication_classes([TokenAuthentication])
-def logout(self, request, *args, **kwargs):
+def logout(request):
     '''Deletes authentication token'''
     request.user.auth_token.delete()
     return Response({'success': 'Logged out successfully'})
 
 
+# Url to delete user
 @api_view(['DELETE'])
 @authentication_classes([TokenAuthentication])
 def deleteuser(request):
@@ -58,7 +75,19 @@ def deleteuser(request):
     return Response({'success': 'User deleted successfully'})
 
 
+# Url to update username of user with respective token
+@swagger_auto_schema(
+    method='put', request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            'username': openapi.Schema(type=openapi.TYPE_STRING, format='username'),
+        }
+    ),
+    # security=[{"Authorization": [], }],
+)
 @api_view(['PUT'])  # Allow PUT requests
+# Only token authenticated users can access
+@authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])  # Only authenticated users can update
 def updateuser(request):
     user = request.user
